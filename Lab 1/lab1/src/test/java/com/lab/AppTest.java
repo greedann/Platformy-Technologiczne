@@ -1,4 +1,4 @@
-package maven_test;
+package com.lab;
 
 import static org.junit.Assert.assertTrue;
 
