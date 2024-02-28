@@ -1,5 +1,7 @@
 package com.lab;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -7,20 +9,28 @@ public class Mage implements Comparable<Mage> {
     String name;
     int level;
     double power;
-    private TreeSet<Mage> apprentices;
+    private Set<Mage> apprentices;
 
-    public Mage(String name, int level, double power, TreeSet<Mage> apprentices) {
+    public Mage(String name, int level, double power, String sorting) {
         this.name = name;
         this.level = level;
         this.power = power;
-        this.apprentices = apprentices;
+        if (sorting == "none") {
+            apprentices = new HashSet<>();
+        } else if (sorting == "natural") {
+            apprentices = new TreeSet<>();
+        } else if (sorting == "alternative") {
+            apprentices = new TreeSet<>(new MageComparator());
+        } else {
+            System.err.println("unsupported sorting type");
+        }
     }
 
     public Mage(String name, int level, double power) {
         this.name = name;
         this.level = level;
         this.power = power;
-        this.apprentices = new TreeSet<>();
+        this.apprentices = new HashSet<>();
     }
 
     // text representation of the object Mage{name='', level=, power=}
@@ -70,16 +80,16 @@ public class Mage implements Comparable<Mage> {
     }
 
     public void print() {
-        print(0);
+        print(0, "1.");
     }
 
-    public void print(int depth) {
-        for (int i = 0; i < depth; i++) {
-            System.out.print("-");
-        }
+    private void print(int depth, String prefix) {
+        System.out.print(prefix + ' ');
         System.out.println(this);
+        int i = 0;
         for (Mage apprentice : apprentices) {
-            apprentice.print(depth + 1);
+            i++;
+            apprentice.print(depth + 1, prefix + i + '.');
         }
     }
 
@@ -95,7 +105,7 @@ public class Mage implements Comparable<Mage> {
     }
 
     private int countApprentices(TreeMap<Mage, Integer> stat) { // prints the number of apprentices uncluding the
-                                                                // apprentices of
+        // apprentices of
         // apprentices
         int count = 0;
         for (Mage apprentice : apprentices) {

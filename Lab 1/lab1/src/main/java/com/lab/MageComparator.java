@@ -19,5 +19,4 @@ public class MageComparator implements Comparator<Mage> {
             return mage1.level - mage2.level;
         }
     }
-    
 }
