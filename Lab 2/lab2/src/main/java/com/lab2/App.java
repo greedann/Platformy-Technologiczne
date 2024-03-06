@@ -6,8 +6,8 @@ import java.util.Scanner;
 
 public class App {
     public static void main(String[] args) throws InterruptedException {
-        SyncronizeQueue<String> resultQueue = new SyncronizeQueue<>();
-        SyncronizeQueue<Integer> taskQueue = new SyncronizeQueue<>();
+        SyncronizeQueue<Answer> resultQueue = new SyncronizeQueue<>();
+        SyncronizeQueue<Task> taskQueue = new SyncronizeQueue<>();
 
         if (args.length != 1) {
             System.out.println("Doesn't have enough arguments");
@@ -15,33 +15,33 @@ public class App {
         }
 
         int n_threads = Integer.parseInt(args[0]);
-        List<Calculator> workerList = new ArrayList<>();
+        List<Calc> workerList = new ArrayList<>();
         List<Thread> threadList = new ArrayList<>();
 
         for (int i = 0; i < n_threads; i++) {
-            Calculator calculator = new Calculator(taskQueue, resultQueue);
+            Calc calculator = new Calc(taskQueue, resultQueue);
             workerList.add(calculator);
             Thread thread = new Thread(calculator);
             threadList.add(thread);
             thread.start();
         }
-
+        int i = 1;
         Scanner scanner = new Scanner(System.in);
         String currentTask;
         while (!(currentTask = scanner.nextLine()).equals("exit")) {
             if (!isNumeric(currentTask))
                 continue;
             int currentValue = Integer.parseInt(currentTask);
-            taskQueue.put(currentValue);
+            taskQueue.put(new Task(currentValue, i));
+            i++;
         }
 
         taskQueue.stop();
 
         for (Thread thread : threadList) {
-            thread.join();
+            thread.interrupt();
         }
         scanner.close();
-        resultQueue.print();
     }
 
     public static boolean isNumeric(String strNum) {

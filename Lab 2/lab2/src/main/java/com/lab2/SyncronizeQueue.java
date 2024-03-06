@@ -7,7 +7,7 @@ public class SyncronizeQueue<T> {
     private Queue<T> queue = new LinkedList<T>();
     private boolean isStopped = false;
 
-    public synchronized void put(T element) throws InterruptedException {
+    public synchronized void put(T element) {
         queue.add(element);
         notify();
     }
