@@ -5,13 +5,10 @@ import static org.mockito.Mockito.*;
 
 import org.junit.Test;
 
-/**
- * Unit test for simple App.
- */
 public class ControllerTest {
 
     @Test
-    public void findUnexistingMage() {
+    public void findUnExistingMage() {
         MageRepository mageRepository = mock(MageRepository.class);
         MageController mageController = new MageController(mageRepository);
 
@@ -30,7 +27,7 @@ public class ControllerTest {
     }
 
     @Test
-    public void deleteUnexistingMage() {
+    public void deleteUnExistingMage() {
         MageRepository mageRepository = mock(MageRepository.class);
         MageController mageController = new MageController(mageRepository);
         doThrow(new IllegalArgumentException()).when(mageRepository).delete("mage4");

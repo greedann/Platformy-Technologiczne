@@ -1,17 +1,17 @@
 package com.lab5;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class RepositoryTest {
 
     @Test
-    public void findUnexistingMage() {
+    public void findUnExistingMage() {
         MageRepository mageRepository = new MageRepository();
 
         mageRepository.save(new Mage("mage1", 12));
-        assertEquals(mageRepository.find("mage4").isPresent(), false);
+        assertFalse(mageRepository.find("mage4").isPresent());
 
     }
 
@@ -20,11 +20,11 @@ public class RepositoryTest {
         MageRepository mageRepository = new MageRepository();
 
         mageRepository.save(new Mage("mage1", 12));
-        assertEquals(mageRepository.find("mage1").isPresent(), true);
+        assertTrue(mageRepository.find("mage1").isPresent());
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void deleteUnexistingMage() {
+    public void deleteUnExistingMage() {
         MageRepository mageRepository = new MageRepository();
 
         mageRepository.save(new Mage("mage1", 12));
@@ -37,7 +37,7 @@ public class RepositoryTest {
 
         mageRepository.save(new Mage("mage1", 12));
         mageRepository.delete("mage1");
-        assertEquals(mageRepository.find("mage1").isPresent(), false);
+        assertFalse(mageRepository.find("mage1").isPresent());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -53,6 +53,6 @@ public class RepositoryTest {
         MageRepository mageRepository = new MageRepository();
 
         mageRepository.save(new Mage("mage1", 12));
-        assertEquals(mageRepository.find("mage1").isPresent(), true);
+        assertTrue(mageRepository.find("mage1").isPresent());
     }
 }
