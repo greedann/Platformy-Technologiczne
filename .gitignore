@@ -41,3 +41,9 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+# vscode
+.vscode/
+
+# lab 6 output files
+Lab 6/images/out/
