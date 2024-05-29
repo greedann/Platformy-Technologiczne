@@ -1,134 +1,60 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
+using System.Threading;
 
-namespace Server
+public class Server
 {
-    public class Program
+    private static List<TcpClient> clients = new List<TcpClient>();
+
+    public static void Main(string[] args)
     {
-        private UdpClient _udpConnectionServer;
-        private UdpClient _udpServer;
-        private List<IPEndPoint> _udpClients;
-        private BlockingCollection<KeyValuePair<byte, byte[]>> _messagesCollection;
+        TcpListener server = new TcpListener(IPAddress.Any, 5000);
+        server.Start();
+        Console.WriteLine("Server started...");
 
-        private static void Main()
+        while (true)
         {
-            var program = new Program
-            {
-                _udpConnectionServer = new UdpClient(9),
-                _udpServer = new UdpClient(99),
-                _udpClients = new List<IPEndPoint>(),
-                _messagesCollection = new BlockingCollection<KeyValuePair<byte, byte[]>>(
-                    new ConcurrentBag<KeyValuePair<byte, byte[]>>())
-            };
-
-            var connectionTask = Task.Factory.StartNew(() => program.WaitForClients());
-            var collectDataTask = Task.Factory.StartNew(() => program.ResolveData());
-            var sendDataTask = Task.Factory.StartNew(() => program.SendData());
-
-            Console.WriteLine($"Server started at port {((IPEndPoint)program._udpConnectionServer.Client.LocalEndPoint).Port}");
-
-            Task.WaitAll(connectionTask, collectDataTask, sendDataTask);
-        }
-
-        private void SendData()
-        {
-            try
-            {
-                while (true)
-                {
-                    var data = _messagesCollection.Take();
-                    byte[] message = new byte[1 + data.Value.Length];
-                    message[0] = data.Key;
-                    Buffer.BlockCopy(data.Value, 0, message, 1, data.Value.Length);
-                    _udpClients.ForEach(client => _udpServer.Send(message, message.Length, client));
-
-                }
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
-            }
-        }
-
-        private void ResolveData()
-        {
-            try
-            {
-                while (true)
-                {
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                    byte[] bytes = _udpServer.Receive(ref endPoint);
-                    var client = _udpClients.FindIndex(x => x.Equals(endPoint));
-                    if (client == -1)
-                    {
-                        Console.WriteLine($"Unkonwn client {endPoint} wanted to join and the connection was terminated.");
-                    }
-                    else
-                    {
-                        switch (bytes[0])
-                        {
-                            case 0x01:
-                                {
-                                    // capitalise the strin
-                                    string message = Encoding.ASCII.GetString(bytes, 1, bytes.Length - 1);
-                                    Console.WriteLine($"Client {endPoint} sent: {message}");
-                                    byte[] new_bytes = Encoding.ASCII.GetBytes(message.ToUpper());
-                                    for (int i = 0; i < new_bytes.Length; i++)
-                                    {
-                                        bytes[i + 1] = new_bytes[i];
-                                    }
-                                    break;
-                                }   
-                            default:
-                                Console.WriteLine("OTHER");
-                                continue;
-                        }
-                        _messagesCollection.Add(new KeyValuePair<byte, byte[]>((byte)client, bytes));
-                    }
-
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
-            }
-
-        }
-
-        private void WaitForClients()
-        {
-            try
-            {
-                while (true)
-                {
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                    byte[] bytes = _udpConnectionServer.Receive(ref endPoint);
-                    string message = Encoding.ASCII.GetString(bytes);
-                    if (message.Equals("connect"))
-                    {
-                        Console.WriteLine($"{endPoint} connected");
-                        _udpClients.Add(endPoint);
-                        byte[] messageBack = BitConverter.GetBytes((short)((IPEndPoint)_udpServer.Client.LocalEndPoint).Port);
-                        _udpConnectionServer.Send(messageBack, messageBack.Length, endPoint);
-                    }
-                    else if (message.Equals("disconnect"))
-                    {
-                        _udpClients.Remove(endPoint);
-                        Console.WriteLine($"{endPoint} disconnected");
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
-            }
+            TcpClient client = server.AcceptTcpClient();
+            clients.Add(client);
+            Console.WriteLine("Client connected...");
+            Thread clientThread = new Thread(() => HandleClient(client));
+            clientThread.Start();
         }
     }
 
+    private static void HandleClient(TcpClient client)
+    {
+        NetworkStream stream = client.GetStream();
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+
+        while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
+        {
+            string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            Message message = JsonSerializer.Deserialize<Message>(receivedData);
+            message.Text = message.Text.ToUpper();
+            BroadcastMessage(message);
+        }
+
+        clients.Remove(client);
+        client.Close();
+    }
+
+    private static void BroadcastMessage(Message message)
+    {
+        string messageData = JsonSerializer.Serialize(message);
+        byte[] buffer = Encoding.UTF8.GetBytes(messageData);
+
+        foreach (var client in clients)
+        {
+            NetworkStream stream = client.GetStream();
+            stream.Write(buffer, 0, buffer.Length);
+        }
+
+        Console.WriteLine(message.ToString());
+    }
 }
